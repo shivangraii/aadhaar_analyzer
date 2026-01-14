@@ -1,24 +1,25 @@
 import streamlit as st
 import pandas as pd
-from src.data_loader import load_multiple_csv  # adjust if needed
+from src.data_loader import load_multiple_csv
 
 st.set_page_config(
     page_title="Aadhaar Analyzer",
     layout="wide"
 )
 
-# ---------- UI ----------
 st.title("Aadhaar Enrolment Trend & Insight Analyzer")
-st.caption("Data-driven insights for enrolment & update patterns")
+st.caption("Evidence-based insights from enrolment, biometric & demographic data")
 
-st.sidebar.header("Data Source Selection")
+# ---------------- Sidebar ----------------
+st.sidebar.header("Data Source")
+
 choice = st.sidebar.radio(
-    "Select data source",
-    options=[1, 2],
-    format_func=lambda x: "Use provided Aadhaar datasets" if x == 1 else "Upload custom CSV files"
+    "Choose input type",
+    [1, 2],
+    format_func=lambda x: "Use default Aadhaar datasets" if x == 1 else "Upload CSV files"
 )
 
-# ---------- Logic ----------
+# ---------------- Loader ----------------
 def get_data_source(choice):
     if choice == 1:
         paths = [
@@ -31,21 +32,29 @@ def get_data_source(choice):
     else:
         uploaded_files = st.sidebar.file_uploader(
             "Upload CSV files",
-            type=["csv"],
+            type="csv",
             accept_multiple_files=True
         )
 
         if uploaded_files:
-            dfs = [pd.read_csv(file) for file in uploaded_files]
-            return pd.concat(dfs, ignore_index=True)
+            data = {}
+            for file in uploaded_files:
+                name = file.name.replace(".csv", "")
+                data[name] = pd.read_csv(file)
+            return data
 
         return None
 
-# ---------- Execution ----------
-data = get_data_source(choice)
+# ---------------- Run ----------------
+datasets = get_data_source(choice)
 
-if data is not None:
-    st.success("Data loaded successfully ✅")
-    st.dataframe(data.head())
+if datasets:
+    st.success("Datasets loaded successfully ✅")
+
+    for name, df in datasets.items():
+        st.subheader(f"📂 {name.capitalize()} Dataset")
+        st.write(f"Shape: {df.shape}")
+        st.dataframe(df.head())
+
 else:
-    st.info("Please select or upload data to begin analysis.")
+    st.info("Please upload or select datasets to begin analysis.")
